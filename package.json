@@ -7,7 +7,12 @@
     "dev": "prisma generate --no-engine && nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "prisma generate --no-engine && nuxt prepare"
+    "postinstall": "prisma generate --no-engine && nuxt prepare",
+    "start": "node .output/server/index.mjs",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
   },
   "dependencies": {
     "@nuxtjs/tailwindcss": "^7.0.0-beta.0",
