@@ -35,7 +35,6 @@ export default defineNuxtConfig({
   // Оптимизация производительности
   experimental: {
     payloadExtraction: false,
-    inlineSSRStyles: false,
     renderJsonPayloads: true
   },
 

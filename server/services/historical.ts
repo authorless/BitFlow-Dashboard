@@ -2,11 +2,9 @@ import { getHistoricalData, getBitcoinPrice } from './binance';
 import { clearHistoricalPrices } from './database';
 import { prisma } from '../lib/prisma';
 
-type IntervalType = 'day' | 'week' | 'month' | 'year';
+export type IntervalType = 'day' | 'week' | 'month' | 'year';
 
-interface Intervals {
-  [key in IntervalType]: string;
-}
+type Intervals = Record<IntervalType, string>;
 
 const INTERVALS: Intervals = {
   day: '1h',      // для дня используем часовые интервалы
@@ -15,12 +13,12 @@ const INTERVALS: Intervals = {
   year: '1w',     // для года недельные
 };
 
-export const fetchAndSaveHistoricalData = async (startDate: Date, endDate: Date, period: string = 'day') => {
+export const fetchAndSaveHistoricalData = async (startDate: Date, endDate: Date, period: IntervalType = 'day') => {
   try {
     // Очищаем старые данные за указанный период
     await clearHistoricalPrices(startDate, endDate);
 
-    const interval = INTERVALS[period] || '1h';
+    const interval = INTERVALS[period];
     const historicalData = await getHistoricalData(
       startDate.getTime(),
       endDate.getTime(),

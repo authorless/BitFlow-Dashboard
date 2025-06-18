@@ -5,7 +5,7 @@ export default defineNitroPlugin((nitroApp) => {
     console.error('Application error:', {
       message: error.message,
       stack: error.stack,
-      data: error.data
+      data: (error as any)?.data
     })
   })
 })
