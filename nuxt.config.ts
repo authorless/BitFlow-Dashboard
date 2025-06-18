@@ -1,5 +1,26 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  compatibilityDate: '2025-05-15',
-  devtools: { enabled: true }
+  modules: ['@nuxtjs/tailwindcss'],
+  
+  // Конфигурация сборки
+  build: {
+    transpile: ['chart.js', 'vue-chartjs']
+  },
+
+  // Среда выполнения
+  nitro: {
+    preset: 'node-server'
+  },
+
+  // Рантайм конфиг
+  runtimeConfig: {
+    public: {
+      apiBase: '/api'
+    }
+  },
+
+  // Включаем TypeScript
+  typescript: {
+    strict: true
+  }
 })
