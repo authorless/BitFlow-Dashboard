@@ -9,7 +9,8 @@ export default defineNuxtConfig({
 
   // Среда выполнения
   nitro: {
-    preset: 'node-server'
+    preset: 'node-server',
+    timing: true
   },
 
   // Рантайм конфиг
@@ -17,6 +18,25 @@ export default defineNuxtConfig({
     public: {
       apiBase: '/api'
     }
+  },
+
+  // Production настройки
+  app: {
+    head: {
+      charset: 'utf-8',
+      viewport: 'width=device-width, initial-scale=1',
+      title: 'Bitcoin Price Tracker',
+      meta: [
+        { name: 'description', content: 'Track Bitcoin price changes in real-time' }
+      ]
+    }
+  },
+
+  // Оптимизация производительности
+  experimental: {
+    payloadExtraction: false,
+    inlineSSRStyles: false,
+    renderJsonPayloads: true
   },
 
   // Включаем TypeScript

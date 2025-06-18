@@ -2,7 +2,13 @@ import { getHistoricalData, getBitcoinPrice } from './binance';
 import { clearHistoricalPrices } from './database';
 import { prisma } from '../lib/prisma';
 
-const INTERVALS: { [key: string]: string } = {
+type IntervalType = 'day' | 'week' | 'month' | 'year';
+
+interface Intervals {
+  [key in IntervalType]: string;
+}
+
+const INTERVALS: Intervals = {
   day: '1h',      // для дня используем часовые интервалы
   week: '4h',     // для недели 4-часовые
   month: '1d',    // для месяца дневные
