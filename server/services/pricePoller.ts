@@ -1,5 +1,5 @@
-import { getBitcoinPrice } from './services/binance';
-import { saveBitcoinPrice } from './services/database';
+import { getBitcoinPrice } from './binance';
+import { saveBitcoinPrice } from './database';
 
 const POLLING_INTERVAL = 60000; // 1 minute
 
