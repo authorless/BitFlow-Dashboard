@@ -10,13 +10,20 @@ export default defineNuxtConfig({
   // Среда выполнения
   nitro: {
     preset: 'node-server',
-    timing: true
+    timing: true,
   },
 
   // Рантайм конфиг
   runtimeConfig: {
     public: {
       apiBase: '/api'
+    }
+  },
+
+  // Vite конфигурация для Prisma
+  vite: {
+    optimizeDeps: {
+      exclude: ['@prisma/client']
     }
   },
 
@@ -41,5 +48,8 @@ export default defineNuxtConfig({
   // Включаем TypeScript
   typescript: {
     strict: true
-  }
+  },
+
+  // Отключаем SSR для страниц, где это не нужно
+  ssr: true
 })

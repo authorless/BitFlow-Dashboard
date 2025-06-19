@@ -1,14 +1,12 @@
-import { PrismaClient } from '@prisma/client';
+import { pool, initDb } from '~/server/db';
 
-let prisma: PrismaClient;
-
-export default defineNuxtPlugin(() => {
-  if (!prisma) {
-    prisma = new PrismaClient();
-  }
+export default defineNuxtPlugin(async () => {
+  // Инициализируем базу данных при запуске
+  await initDb();
+  
   return {
     provide: {
-      prisma: prisma
+      db: pool
     }
   };
 });
