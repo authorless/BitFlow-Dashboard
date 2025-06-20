@@ -2,16 +2,21 @@
 export default defineNuxtConfig({
   modules: ['@nuxtjs/tailwindcss'],
   
+  // Совместимость
+  compatibilityDate: '2025-06-20',
+
+  // DevTools
+  devtools: { enabled: true },
+  
   // Конфигурация сборки
   build: {
     transpile: ['chart.js', 'vue-chartjs']
   },
 
-  // Среда выполнения
+  // Конфигурация Nitro
   nitro: {
     preset: 'node-server',
     timing: true,
-    // Исключаем Prisma Client из клиентской сборки
     experimental: {
       wasm: true
     }
@@ -34,29 +39,33 @@ export default defineNuxtConfig({
     }
   },
 
-  // Production настройки
+  // Настройки приложения
   app: {
     head: {
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1',
-      title: 'Bitcoin Price Tracker',
+      title: 'Bitcoin Metrics Dashboard',
       meta: [
-        { name: 'description', content: 'Track Bitcoin price changes in real-time' }
+        { name: 'description', content: 'Real-time Bitcoin price tracking and analytics dashboard' }
       ]
     }
   },
 
-  // Оптимизация производительности
+  // Настройки CSS
+  css: [],
+
+  // TypeScript
+  typescript: {
+    strict: true,
+    typeCheck: false // Отключаем typeCheck для development
+  },
+
+  // Экспериментальные функции
   experimental: {
     payloadExtraction: false,
     renderJsonPayloads: true
   },
 
-  // Включаем TypeScript
-  typescript: {
-    strict: true
-  },
-
-  // Отключаем SSR для страниц, где это не нужно
+  // SSR включен для лучшего SEO
   ssr: true
 })

@@ -1,5 +1,7 @@
 {
-  "name": "nuxt-app",
+  "name": "bitflow-dashboard",
+  "version": "1.0.0",
+  "description": "Modern Bitcoin dashboard with interactive charts and real-time data",
   "private": true,
   "type": "module",
   "scripts": {

@@ -1,60 +1,69 @@
 <template>
-  <div class="container mx-auto px-4 py-8">
-    <h1 class="text-4xl font-bold mb-8 text-center">Bitcoin Price Tracker</h1>
-    
-    <div class="mb-8">
-      <div class="flex justify-center space-x-4 mb-4">
-        <button
-          v-for="period in periods"
-          :key="period.value"
-          @click="selectPeriod(period)"
-          :class="[
-            'px-4 py-2 rounded-lg',
-            selectedPeriod.value === period.value
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 hover:bg-gray-300'
-          ]"
-          :disabled="loading"
-        >
-          {{ period.label }}
-        </button>
-      </div>
+  <div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+    <div class="container mx-auto px-4 py-8">      <h1 class="text-5xl font-bold mb-8 text-center text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-400">
+        📈 BitFlow Dashboard
+      </h1>
       
-      <div v-if="showCustomPeriod" class="flex justify-center space-x-4">
-        <input
-          type="date"
-          v-model="customStartDate"
-          class="border rounded px-3 py-2"
-          :disabled="loading"
-        />
-        <input
-          type="date"
-          v-model="customEndDate"
-          class="border rounded px-3 py-2"
-          :disabled="loading"
-        />
-        <button
-          @click="applyCustomPeriod"
-          class="bg-blue-600 text-white px-4 py-2 rounded-lg"
-          :disabled="loading"
-        >
-          Apply
-        </button>
+      <div class="mb-8">
+        <div class="flex justify-center space-x-4 mb-4 flex-wrap gap-2">
+          <button
+            v-for="period in periods"
+            :key="period.value"
+            @click="selectPeriod(period)"
+            :class="[
+              'px-6 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105',
+              selectedPeriod.value === period.value
+                ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white shadow-lg'
+                : 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white'
+            ]"
+            :disabled="loading"
+          >
+            {{ period.label }}
+          </button>
+        </div>
+        
+        <div v-if="showCustomPeriod" class="flex justify-center space-x-4 bg-gray-800 p-4 rounded-lg max-w-md mx-auto">
+          <input
+            type="date"
+            v-model="customStartDate"
+            class="border border-gray-600 bg-gray-700 text-white rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            :disabled="loading"
+          />
+          <input
+            type="date"
+            v-model="customEndDate"
+            class="border border-gray-600 bg-gray-700 text-white rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
+            :disabled="loading"
+          />
+          <button
+            @click="applyCustomPeriod"
+            class="bg-gradient-to-r from-orange-500 to-yellow-500 text-white px-4 py-2 rounded-lg hover:from-orange-600 hover:to-yellow-600 transition-all duration-200"
+            :disabled="loading"
+          >
+            Apply
+          </button>
+        </div>
       </div>
-    </div>
 
-    <div class="bg-white rounded-lg shadow-lg p-6">
-      <div class="text-center mb-4">
-        <div v-if="error" class="text-red-600 mb-2">{{ error }}</div>
-        <span class="text-2xl font-bold">Current Price: ${{ currentPrice.toLocaleString() }}</span>
-      </div>
-      
-      <div v-if="loading" class="h-[500px] flex items-center justify-center">
-        <div class="text-xl text-gray-600">Loading...</div>
-      </div>
-      
-      <div v-else class="h-[500px]">
-        <BitcoinChart :prices="prices" />
+      <div class="bg-gray-800 rounded-xl shadow-2xl p-6 border border-gray-700">
+        <div class="text-center mb-6">
+          <div v-if="error" class="text-red-400 mb-4 text-lg">{{ error }}</div>
+          <div class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-400">
+            ${{ currentPrice.toLocaleString() }}
+          </div>
+          <div class="text-gray-400 text-sm mt-2">Current Bitcoin Price</div>
+        </div>
+        
+        <div v-if="loading" class="h-[500px] flex items-center justify-center">
+          <div class="text-center">
+            <div class="text-6xl mb-4 animate-pulse">₿</div>
+            <div class="text-xl text-gray-400">Loading...</div>
+          </div>
+        </div>
+        
+        <div v-else class="h-[500px]">
+          <BitcoinChart :prices="prices" :period="selectedPeriod.value" />
+        </div>
       </div>
     </div>
   </div>
@@ -160,7 +169,7 @@ const fetchHistoricalData = async (start: Date, end: Date, period: string = 'day
 const updateData = async () => {
   try {
     const { start, end } = getDateRange(selectedPeriod.value.value);
-    await fetchCurrentPrice();
+    // Убираем fetchCurrentPrice() отсюда - текущая цена обновляется отдельно
     await fetchHistoricalData(start, end, selectedPeriod.value.value);
   } catch (err) {
     console.error('Error updating data:', err);
@@ -192,7 +201,8 @@ const applyCustomPeriod = async () => {
     return;
   }
 
-  await fetchHistoricalData(start, end);
+  // Обновляем только исторические данные, не трогаем текущую цену
+  await fetchHistoricalData(start, end, 'custom');
 };
 
 // Начальная загрузка данных

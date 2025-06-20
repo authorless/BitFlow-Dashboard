@@ -2,7 +2,7 @@ FROM node:18-alpine AS base
 
 WORKDIR /app
 
-# Устанавливаем необходимые инструменты
+# Устанавливаем необходимые системные пакеты
 RUN apk add --no-cache curl
 
 FROM base AS deps
@@ -11,58 +11,50 @@ FROM base AS deps
 COPY package.json package-lock.json ./
 COPY prisma ./prisma/
 
-# Устанавливаем все зависимости
-RUN npm ci
+# Устанавливаем зависимости
+RUN npm ci --only=production && npm cache clean --force
 
 FROM base AS builder
 
-# Копируем все из deps
+# Копируем зависимости и исходный код
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/package.json ./package.json
 COPY --from=deps /app/prisma ./prisma
-
-# Копируем исходный код
 COPY . .
 
-# Генерируем Prisma client
+# Генерируем Prisma client и собираем приложение
 RUN npx prisma generate
-
-# Устанавливаем переменные для Nuxt
-ENV NUXT_TELEMETRY_DISABLED=1
-ENV PRISMA_SKIP_POSTINSTALL_GENERATE=true
-
-# Собираем приложение
 RUN npm run build
 
 FROM base AS runner
 
-# Создаем пользователя
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nuxtjs
+# Создаем пользователя для безопасности
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nuxtjs
 
 # Устанавливаем переменные окружения
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3000
+ENV NUXT_TELEMETRY_DISABLED=1
 
-# Копируем production файлы
+# Копируем собранное приложение
 COPY --from=builder --chown=nuxtjs:nodejs /app/.output ./.output
-COPY --from=deps --chown=nuxtjs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nuxtjs:nodejs /app/package.json ./
 COPY --from=builder --chown=nuxtjs:nodejs /app/prisma ./prisma
+COPY --from=deps --chown=nuxtjs:nodejs /app/node_modules ./node_modules
 
-# Add entrypoint script (создаем после копирования файлов)
+# Создаем entrypoint script
 RUN echo '#!/bin/sh\n\
 set -e\n\
-echo "Generating Prisma client..."\n\
+echo "🔗 Generating Prisma client..."\n\
 npx prisma generate\n\
-echo "Running Prisma database push..."\n\
+echo "🗄️  Setting up database..."\n\
 npx prisma db push --accept-data-loss\n\
-echo "Starting application..."\n\
-exec "$@"' > /app/docker-entrypoint.sh && chmod +x /app/docker-entrypoint.sh
-
-# Изменяем владельца entrypoint файла
-RUN chown nuxtjs:nodejs /app/docker-entrypoint.sh
+echo "🚀 Starting application..."\n\
+exec "$@"' > /app/docker-entrypoint.sh && \
+chmod +x /app/docker-entrypoint.sh && \
+chown nuxtjs:nodejs /app/docker-entrypoint.sh
 
 USER nuxtjs
 
