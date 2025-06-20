@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
     <div class="container mx-auto px-4 py-8">      <h1 class="text-5xl font-bold mb-8 text-center text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-400">
-        📈 BitFlow Dashboard
+        ₿ BitFlow Dashboard
       </h1>
       
       <div class="mb-8">
