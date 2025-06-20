@@ -1,0 +1,21 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model BitcoinPrice {
+  id        Int      @id @default(autoincrement())
+  price     Decimal  @db.Decimal(20, 2)
+  timestamp DateTime @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("bitcoin_prices")
+  @@index([timestamp])
+}

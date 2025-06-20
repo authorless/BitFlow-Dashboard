@@ -14,6 +14,7 @@
               ? 'bg-blue-600 text-white'
               : 'bg-gray-200 hover:bg-gray-300'
           ]"
+          :disabled="loading"
         >
           {{ period.label }}
         </button>
@@ -24,15 +25,18 @@
           type="date"
           v-model="customStartDate"
           class="border rounded px-3 py-2"
+          :disabled="loading"
         />
         <input
           type="date"
           v-model="customEndDate"
           class="border rounded px-3 py-2"
+          :disabled="loading"
         />
         <button
           @click="applyCustomPeriod"
           class="bg-blue-600 text-white px-4 py-2 rounded-lg"
+          :disabled="loading"
         >
           Apply
         </button>
@@ -41,10 +45,15 @@
 
     <div class="bg-white rounded-lg shadow-lg p-6">
       <div class="text-center mb-4">
-        <span class="text-2xl font-bold">Current Price: ${{ currentPrice }}</span>
+        <div v-if="error" class="text-red-600 mb-2">{{ error }}</div>
+        <span class="text-2xl font-bold">Current Price: ${{ currentPrice.toLocaleString() }}</span>
       </div>
       
-      <div class="h-[500px]">
+      <div v-if="loading" class="h-[500px] flex items-center justify-center">
+        <div class="text-xl text-gray-600">Loading...</div>
+      </div>
+      
+      <div v-else class="h-[500px]">
         <BitcoinChart :prices="prices" />
       </div>
     </div>
@@ -53,9 +62,11 @@
 
 <script setup lang="ts">
 const currentPrice = ref(0);
-const prices = ref([]);
+const prices = ref<Array<{ timestamp: string; price: number }>>([]);
 const customStartDate = ref('');
 const customEndDate = ref('');
+const loading = ref(false);
+const error = ref<string>('');
 
 const periods = [
   { label: 'Day', value: 'day' },
@@ -70,39 +81,41 @@ const showCustomPeriod = computed(() => selectedPeriod.value.value === 'custom')
 
 const fetchCurrentPrice = async () => {
   try {
+    console.log('Fetching current price...');
     const response = await fetch('/api/price');
+    if (!response.ok) throw new Error('Failed to fetch current price');
     const data = await response.json();
+    console.log('Received price data:', data);
     currentPrice.value = data.price;
-  } catch (error) {
-    console.error('Error fetching current price:', error);
+  } catch (err) {
+    console.error('Error fetching current price:', err);
+    error.value = 'Failed to fetch current price';
   }
 };
 
 const getDateRange = (period: string) => {
   const end = new Date();
-  end.setHours(23, 59, 59, 999); // Конец дня
+  end.setHours(23, 59, 59, 999);
   
   let start = new Date();
-  start.setHours(0, 0, 0, 0); // Начало дня
+  start.setHours(0, 0, 0, 0);
 
   switch (period) {
     case 'day':
-      // Оставляем текущий день
       break;
     case 'week':
       start = new Date(end);
       start.setDate(end.getDate() - 7);
-      start.setHours(0, 0, 0, 0);
       break;
     case 'month':
       start = new Date(end);
       start.setMonth(end.getMonth() - 1);
-      start.setHours(0, 0, 0, 0);
       break;
     case 'year':
       start = new Date(end);
       start.setFullYear(end.getFullYear() - 1);
-      start.setHours(0, 0, 0, 0);
+      break;
+    default:
       break;
   }
 
@@ -111,52 +124,92 @@ const getDateRange = (period: string) => {
 
 const fetchHistoricalData = async (start: Date, end: Date, period: string = 'day') => {
   try {
-    const response = await fetch(
-      `/api/historical?startDate=${start.getTime()}&endDate=${end.getTime()}&period=${period}`
-    );
+    loading.value = true;
+    error.value = '';
+    
+    // Проверяем, что даты корректны
+    const startTime = start.getTime();
+    const endTime = end.getTime();
+    
+    console.log('Fetching historical data with params:', { startTime, endTime, period });
+    
+    const params = new URLSearchParams({
+      startDate: startTime.toString(),
+      endDate: endTime.toString(),
+      period
+    });
+
+    const url = `/api/historical?${params}`;
+    console.log('Historical data URL:', url);
+    
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`Failed to fetch historical data: ${response.status}`);
+    
     const data = await response.json();
-    prices.value = data.map((item: any) => ({
-      ...item,
-      price: Number(item.price)
-    }));
-  } catch (error) {
-    console.error('Error fetching historical data:', error);
+    console.log('Received historical data:', data.length, 'items');
+    prices.value = data;
+  } catch (err) {
+    console.error('Error fetching historical data:', err);
+    error.value = 'Failed to fetch historical data';
+    prices.value = [];
+  } finally {
+    loading.value = false;
   }
 };
 
-const selectPeriod = async (period) => {
+const updateData = async () => {
+  try {
+    const { start, end } = getDateRange(selectedPeriod.value.value);
+    await fetchCurrentPrice();
+    await fetchHistoricalData(start, end, selectedPeriod.value.value);
+  } catch (err) {
+    console.error('Error updating data:', err);
+    error.value = 'Failed to update data';
+  }
+};
+
+const selectPeriod = async (period: typeof periods[0]) => {
   selectedPeriod.value = period;
-  // Очищаем текущие данные перед загрузкой новых
-  prices.value = [];
-  
   if (period.value !== 'custom') {
-    const { start, end } = getDateRange(period.value);
-    await fetchHistoricalData(start, end, period.value);
+    await updateData();
   }
 };
 
 const applyCustomPeriod = async () => {
+  if (!customStartDate.value || !customEndDate.value) {
+    error.value = 'Please select both start and end dates';
+    return;
+  }
+
   const start = new Date(customStartDate.value);
   start.setHours(0, 0, 0, 0);
   
   const end = new Date(customEndDate.value);
   end.setHours(23, 59, 59, 999);
-  
+
   if (start > end) {
-    alert('Start date cannot be later than end date');
+    error.value = 'Start date must be before end date';
     return;
   }
-  
+
   await fetchHistoricalData(start, end);
 };
 
-// Initial data fetch
+// Начальная загрузка данных
 onMounted(async () => {
-  await fetchCurrentPrice();
-  const { start, end } = getDateRange('day');
-  await fetchHistoricalData(start, end);
+  console.log('Component mounted, initializing data...');
   
-  // Update price every minute
-  setInterval(fetchCurrentPrice, 60000);
+  // Устанавливаем текущую цену сразу при загрузке
+  await fetchCurrentPrice();
+  
+  // Затем получаем исторические данные за день
+  const { start, end } = getDateRange('day');
+  await fetchHistoricalData(start, end, 'day');
+  
+  console.log('Initial data loaded');
+  
+  // Запускаем обновление цены каждые 30 секунд
+  const interval = setInterval(fetchCurrentPrice, 30000);
+  onUnmounted(() => clearInterval(interval));
 });
 </script>

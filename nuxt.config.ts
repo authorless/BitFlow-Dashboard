@@ -11,19 +11,26 @@ export default defineNuxtConfig({
   nitro: {
     preset: 'node-server',
     timing: true,
+    // Исключаем Prisma Client из клиентской сборки
+    experimental: {
+      wasm: true
+    }
+  },
+
+  // Vite конфигурация
+  vite: {
+    optimizeDeps: {
+      exclude: ['@prisma/client']
+    },
+    define: {
+      global: 'globalThis'
+    }
   },
 
   // Рантайм конфиг
   runtimeConfig: {
     public: {
       apiBase: '/api'
-    }
-  },
-
-  // Vite конфигурация для Prisma
-  vite: {
-    optimizeDeps: {
-      exclude: ['@prisma/client']
     }
   },
 

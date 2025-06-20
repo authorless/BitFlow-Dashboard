@@ -1,32 +1,20 @@
 <template>
-  <Line v-if="chartData" :data="chartData" :options="chartOptions" class="h-full" />
+  <div class="h-full">
+    <div v-if="!chartData || chartData.labels.length === 0" class="h-full flex items-center justify-center text-gray-500">
+      <div class="text-center">
+        <div class="text-lg mb-2">📊</div>
+        <div>Загрузка данных графика...</div>
+      </div>
+    </div>
+    <Line v-else :data="chartData" :options="chartOptions" class="h-full" />
+  </div>
 </template>
 
 <script setup lang="ts">
 import { Line } from 'vue-chartjs';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-} from 'chart.js';
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend
-);
 
 const props = defineProps<{
-  prices: Array<{ timestamp: string; price: number }>
+  prices: Array<{ timestamp: string | Date; price: number | string }>
 }>();
 
 const formatDate = (date: Date) => {
@@ -43,21 +31,38 @@ const formatDate = (date: Date) => {
 };
 
 const chartData = computed(() => {
+  if (!props.prices || props.prices.length === 0) {
+    return null;
+  }
+
+  console.log('Raw prices data:', props.prices);
+
   // Сортируем данные по времени и удаляем дубликаты
   const uniquePrices = props.prices
-    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+    .map(p => ({
+      timestamp: typeof p.timestamp === 'string' ? new Date(p.timestamp) : p.timestamp,
+      price: typeof p.price === 'string' ? parseFloat(p.price) : p.price
+    }))
+    .filter(p => !isNaN(p.price) && p.timestamp instanceof Date && !isNaN(p.timestamp.getTime()))
+    .sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime())
     .filter((price, index, self) => 
       index === self.findIndex(p => 
-        new Date(p.timestamp).getTime() === new Date(price.timestamp).getTime()
+        p.timestamp.getTime() === price.timestamp.getTime()
       )
     );
 
+  console.log('Processed prices data:', uniquePrices);
+
+  if (uniquePrices.length === 0) {
+    return null;
+  }
+
   return {
-    labels: uniquePrices.map(p => formatDate(new Date(p.timestamp))),
+    labels: uniquePrices.map(p => formatDate(p.timestamp)),
     datasets: [
       {
         label: 'Bitcoin Price (USD)',
-        data: uniquePrices.map(p => typeof p.price === 'string' ? parseFloat(p.price) : p.price),
+        data: uniquePrices.map(p => p.price),
         borderColor: '#F7931A',
         backgroundColor: 'rgba(247, 147, 26, 0.2)',
         borderWidth: 2,
@@ -73,7 +78,7 @@ const chartOptions = {
   maintainAspectRatio: false,
   interaction: {
     intersect: false,
-    mode: 'index'
+    mode: 'index' as const
   },
   plugins: {
     tooltip: {
@@ -104,7 +109,7 @@ const chartOptions = {
         color: 'rgba(0, 0, 0, 0.1)'
       },
       ticks: {
-        callback: (value: number) => `$${value.toLocaleString()}`
+        callback: (value: string | number) => `$${Number(value).toLocaleString()}`
       }
     }
   }

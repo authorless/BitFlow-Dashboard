@@ -1,6 +1,5 @@
 import { getHistoricalData, getBitcoinPrice } from './binance';
-import { clearHistoricalPrices } from './database';
-import { prisma } from '../lib/prisma';
+import { clearHistoricalPrices, saveBitcoinPrice } from './database';
 
 export type IntervalType = 'day' | 'week' | 'month' | 'year';
 
@@ -27,24 +26,14 @@ export const fetchAndSaveHistoricalData = async (startDate: Date, endDate: Date,
 
     // Сохраняем исторические данные в базу с правильными временными метками
     const savePromises = historicalData.map(async (data: { timestamp: number; price: number }) => {
-      return await prisma.bitcoinPrice.create({
-        data: {
-          price: data.price,
-          timestamp: new Date(data.timestamp)
-        }
-      });
+      return await saveBitcoinPrice(data.price, new Date(data.timestamp));
     });
 
     await Promise.all(savePromises);
 
     // Получаем текущую цену и сохраняем её
     const currentPrice = await getBitcoinPrice();
-    await prisma.bitcoinPrice.create({
-      data: {
-        price: currentPrice,
-        timestamp: new Date()
-      }
-    });
+    await saveBitcoinPrice(currentPrice, new Date());
 
     return historicalData;
   } catch (error) {
