@@ -6,8 +6,9 @@
     ':automergePatch',
     ':automergeMinor',
     ':automergeDigest',
+    ':disableDependencyDashboard',
     ':disableRateLimiting',
-    ':label(🔁 Auto)',
+    ':label(🤖 Automatic)',
   ],
   automerge: true,
   packageRules: [
