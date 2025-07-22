@@ -1,45 +1,38 @@
 {
-  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
-  extends: [
-    'config:best-practices',
-    ':automergeBranch',
-    ':automergePatch',
-    ':automergeMinor',
-    ':automergeDigest',
-    ':disableDependencyDashboard',
-    ':disableRateLimiting',
-    ':label(🤖 Automatic)',
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:best-practices",
+    ":automergePatch",
+    ":automergeMinor",
+    ":automergeDigest",
+    ":disableDependencyDashboard",
+    ":disableRateLimiting",
+    ":label(🤖 Automatic)"
   ],
-  automerge: true,
-  packageRules: [
+  "packageRules": [
     {
-      matchUpdateTypes: [
-        'patch',
-        'minor',
-      ],
-      automerge: true,
+      "matchUpdateTypes": ["patch", "minor"],
+      "automerge": true
     },
     {
-      groupName: 'core deps',
-      automerge: true,
-      matchPackageNames: [
-        '/prisma/',
-        '/pg/',
-        '/nuxt/',
-        '/vue/',
-        '/chart.js/',
-        '/tailwindcss/',
+      "groupName": "core deps",
+      "matchPackageNames": [
+        "/prisma/",
+        "/pg/",
+        "/nuxt/",
+        "/vue/",
+        "/chart.js/",
+        "/tailwindcss/"
       ],
+      "automerge": true
     },
     {
-      matchDepTypes: [
-        'devDependencies',
-      ],
-      groupName: 'dev deps',
-      automerge: true,
-    },
+      "matchDepTypes": ["devDependencies"],
+      "groupName": "dev deps",
+      "automerge": true
+    }
   ],
-  'git-submodules': {
-    enabled: true,
-  },
+  "git-submodules": {
+    "enabled": true
+  }
 }
