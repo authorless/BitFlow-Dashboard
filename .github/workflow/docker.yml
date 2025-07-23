@@ -11,6 +11,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,16 +25,12 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build and Push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/bitflow-dashboard:latest
-
-      - name: Publish Docker Compose artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: docker-compose
-          path: docker-compose.yml
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/bitflow-dashboard:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/bitflow-dashboard:${{ github.sha }}
