@@ -24,6 +24,7 @@
 - **API**: Binance API for real-time price data
 - **Styling**: Modern dark theme with gradients
 
+
 ## 🚀 Quick Start
 
 ### 1. 📦 Installation
@@ -31,7 +32,7 @@
 ```bash
 # Clone the project
 git clone <repository-url>
-cd Bitcoin-metrick
+cd BitFlow-Dashboard
 
 # Install dependencies
 npm install
@@ -44,9 +45,9 @@ npm install
 cp .env.example .env
 
 # Edit .env file with your PostgreSQL credentials
-DATABASE_URL="postgresql://username:password@localhost:5432/bitflow_db"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/bitcoin_db"
 
-# Create migrations
+# Apply migrations
 npm run prisma:migrate
 
 # Generate Prisma client
@@ -58,38 +59,64 @@ npm run prisma:generate
 ```bash
 # Development mode
 npm run dev
-# 🌐 Opens at http://localhost:3000
+# 🌐 http://localhost:3000
 
 # Production build
 npm run build
 npm run start
 ```
 
+## 🐳 Automatic Docker Build with GitHub Actions
+
+The project automatically builds and publishes a Docker image on every push to the `main` branch using GitHub Actions.
+
+The Docker image is published to DockerHub with the tag:
+```
+<your_dockerhub>/bitflow-dashboard:latest
+```
+
+You need to set up the secrets `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` in your repository settings.
+
+Workflow file: `.github/workflows/docker.yml`
+
+## 🐳 Docker (Recommended)
+
+```bash
+# Start the entire environment with one command
+npm run docker:up
+
+# Stop
+npm run docker:down
+
+# Rebuild images
+npm run docker:build
+```
+
 ## 📁 Project Structure
 
 ```
 BitFlow-Dashboard/
-├── 🎨 components/
+├── components/
 │   └── BitcoinChart.vue       # Interactive chart with animations
-├── 📄 pages/
+├── pages/
 │   └── index.vue              # Main dashboard page
-├── 🔧 server/
+├── server/
 │   ├── api/                   # REST API endpoints
-│   │   ├── price.ts          # Current Bitcoin price
-│   │   ├── historical.ts     # Historical data by periods
-│   │   └── health.ts         # System health check
+│   │   ├── price.ts           # Current Bitcoin price
+│   │   ├── historical.ts      # Historical data by periods
+│   │   └── health.ts          # System health check
 │   ├── db/
-│   │   └── prisma.ts         # PostgreSQL connection
+│   │   └── prisma.ts          # PostgreSQL connection
 │   └── services/
-│       ├── binance.ts        # Binance API integration
-│       ├── database.ts       # Database operations
-│       └── historical.ts     # Historical data logic
-├── 🔌 plugins/
-│   ├── prisma.server.ts      # Prisma client
-│   └── chartjs.client.ts     # Chart.js configuration
-├── 🗃️ prisma/
-│   └── schema.prisma         # Database schema
-└── 🐳 docker-compose.yml     # Docker environment
+│       ├── binance.ts         # Binance API integration
+│       ├── database.ts        # Database operations
+│       └── historical.ts      # Historical data logic
+├── plugins/
+│   ├── prisma.server.ts       # Prisma client
+│   └── chartjs.client.ts      # Chart.js configuration
+├── prisma/
+│   └── schema.prisma          # Database schema
+└── docker-compose.yml         # Docker environment
 ```
 
 ## 🔌 API Endpoints
@@ -137,25 +164,27 @@ npm run prisma:migrate   # 🗃️ Create database migration
 npm run prisma:generate  # ⚡ Generate Prisma client
 ```
 
+
 ## 📋 Requirements
 
-- **Node.js** 18+ 
+- **Node.js** 18+
 - **PostgreSQL** 14+
 - **npm** or **yarn**
-- **Docker** (optional but recommended)
+- **Docker** (recommended)
+
 
 ## 🔧 Environment Variables
 
 ```env
 # Database
-DATABASE_URL="postgresql://user:pass@localhost:5432/bitflow_db"
-POSTGRES_HOST=localhost
+DATABASE_URL="postgresql://postgres:postgres@db:5432/bitcoin_db"
+POSTGRES_HOST=db
 POSTGRES_PORT=5432
-POSTGRES_DB=bitflow_db
+POSTGRES_DB=bitcoin_db
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres
 
-# API keys (if needed in the future)
+# API keys (if needed)
 # BINANCE_API_KEY=your_api_key
 # BINANCE_SECRET_KEY=your_secret_key
 ```
@@ -177,9 +206,10 @@ POSTGRES_PASSWORD=postgres
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+
 ## 📄 License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU AGPL v3. See [LICENSE](LICENSE) file for details.
 
 ---
 
