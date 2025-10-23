@@ -20,7 +20,7 @@
   "dependencies": {
     "@nuxtjs/tailwindcss": "^7.0.0-beta.0",
     "@prisma/client": "^6.10.1",
-    "@vueuse/core": "^13.3.0",
+    "@vueuse/core": "^14.0.0",
     "axios": "^1.10.0",
     "chart.js": "^4.5.0",
     "dayjs": "^1.11.13",
