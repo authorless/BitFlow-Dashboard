@@ -1,35 +1,50 @@
 services:
   db:
-    image: postgres:18-alpine@sha256:96d56f7f57c6aacd1fcb908bc83b345ec5f83231ee486dd66a1baadce274db88
+    image: postgres:16-alpine
+    container_name: bitflow-db
+
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: bitcoin_db
+
     ports:
       - "5432:5432"
+
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+    restart: unless-stopped
+
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
       timeout: 5s
       retries: 5
+
   app:
+    container_name: bitflow-app
+
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/bitcoin_db
-      NODE_ENV: production
-    restart: unless-stopped
+
     depends_on:
       db:
         condition: service_healthy
+
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/bitcoin_db
+      NODE_ENV: production
+
+    ports:
+      - "3000:3000"
+
+    restart: unless-stopped
+
     healthcheck:
-      test: curl -f http://localhost:3000/api/health || exit 1
-      interval: 10s
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:3000 || exit 1"]
+      interval: 15s
       timeout: 5s
       retries: 5
       start_period: 30s

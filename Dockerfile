@@ -1,64 +1,64 @@
-FROM node:24.16.0-alpine@sha256:2bdb65ed1dab192432bc31c95f94155ca5ad7fc1392fb7eb7526ab682fa5bf14 AS base
+FROM node:22-alpine AS base
 
 WORKDIR /app
 
-# Устанавливаем необходимые системные пакеты
-RUN apk add --no-cache curl
+RUN apk add --no-cache \
+    openssl \
+    libc6-compat \
+    curl \
+    netcat-openbsd
+
+ENV NUXT_TELEMETRY_DISABLED=1
 
 FROM base AS deps
 
-# Копируем файлы зависимостей
 COPY package.json package-lock.json ./
 COPY prisma ./prisma/
 
-# Устанавливаем зависимости
-RUN npm ci --only=production && npm cache clean --force
+RUN npm ci
+
+RUN npx prisma generate
 
 FROM base AS builder
 
-# Копируем зависимости и исходный код
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/package.json ./package.json
 COPY --from=deps /app/prisma ./prisma
+
 COPY . .
 
-# Генерируем Prisma client и собираем приложение
-RUN npx prisma generate
 RUN npm run build
 
-FROM base AS runner
+FROM node:22-alpine AS runner
 
-# Создаем пользователя для безопасности
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nuxtjs
+WORKDIR /app
 
-# Устанавливаем переменные окружения
+RUN apk add --no-cache \
+    openssl \
+    libc6-compat \
+    netcat-openbsd
+
+RUN addgroup -S nodejs
+RUN adduser -S bitflow -G nodejs
+
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=3000
 ENV NUXT_TELEMETRY_DISABLED=1
 
-# Копируем собранное приложение
-COPY --from=builder --chown=nuxtjs:nodejs /app/.output ./.output
-COPY --from=builder --chown=nuxtjs:nodejs /app/package.json ./
-COPY --from=builder --chown=nuxtjs:nodejs /app/prisma ./prisma
-COPY --from=deps --chown=nuxtjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=bitflow:nodejs /app/.output ./.output
+COPY --from=builder --chown=bitflow:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=bitflow:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=bitflow:nodejs /app/prisma ./prisma
 
-# Создаем entrypoint script
-RUN echo '#!/bin/sh\n\
-set -e\n\
-echo "🔗 Generating Prisma client..."\n\
-npx prisma generate\n\
-echo "🗄️  Setting up database..."\n\
-npx prisma db push --accept-data-loss\n\
-echo "🚀 Starting application..."\n\
-exec "$@"' > /app/docker-entrypoint.sh && \
-chmod +x /app/docker-entrypoint.sh && \
-chown nuxtjs:nodejs /app/docker-entrypoint.sh
+COPY --chown=bitflow:nodejs entrypoint.sh ./entrypoint.sh
 
-USER nuxtjs
+RUN chmod +x ./entrypoint.sh
+
+USER bitflow
 
 EXPOSE 3000
 
-ENTRYPOINT ["/app/docker-entrypoint.sh"]
-CMD ["node", ".output/server/index.mjs"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s \
+CMD wget --quiet --tries=1 --spider http://localhost:3000 || exit 1
+
+ENTRYPOINT ["./entrypoint.sh"]
