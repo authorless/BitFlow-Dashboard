@@ -6,7 +6,6 @@
   "extends": [
     "config:best-practices",
     ":automergeDigest",
-    ":disableDependencyDashboard",
     ":label(🤖 Automatic)"
   ],
   "packageRules": [
@@ -35,6 +34,7 @@
     {
       "matchUpdateTypes": ["major"],
       "automerge": false,
+      "dependencyDashboardApproval": true,
       "labels": ["breaking-change", "manual-review"]
     }
   ]
