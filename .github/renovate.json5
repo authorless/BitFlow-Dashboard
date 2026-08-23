@@ -1,13 +1,12 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "automerge": true,
+  "automergeType": "pr",
+  "platformAutomerge": false,
+  "ignoreTests": false,
   "extends": [
     "config:best-practices",
-    ":automergePatch",
-    ":automergeMinor",
     ":automergeDigest",
     ":disableDependencyDashboard",
-    ":disableRateLimiting",
     ":label(🤖 Automatic)"
   ],
   "packageRules": [
@@ -17,9 +16,9 @@
     },
     {
       "groupName": "core deps",
+      "matchUpdateTypes": ["minor", "patch"],
       "matchPackageNames": [
         "/prisma/",
-        "/pg/",
         "/nuxt/",
         "/vue/",
         "/chart.js/",
@@ -29,11 +28,14 @@
     },
     {
       "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
       "groupName": "dev deps",
       "automerge": true
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["breaking-change", "manual-review"]
     }
-  ],
-  "git-submodules": {
-    "enabled": true
-  }
+  ]
 }

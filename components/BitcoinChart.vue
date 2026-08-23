@@ -1,6 +1,6 @@
 <template>
   <div class="h-full bg-gradient-to-br from-gray-900 via-gray-800 to-black rounded-xl p-6 border border-gray-700/50 shadow-2xl">
-    <div v-if="!chartDisplayData || chartDisplayData.labels.length === 0" class="h-full flex items-center justify-center text-gray-400">
+    <div v-if="!chartDisplayData?.labels?.length" class="h-full flex items-center justify-center text-gray-400">
       <div class="text-center">
         <div class="text-6xl mb-6 animate-pulse">₿</div>
         <div class="text-xl font-light">Загрузка данных графика...</div>
@@ -58,6 +58,7 @@
 
 <script setup lang="ts">
 import { Line } from 'vue-chartjs';
+import type { ChartData, ChartOptions, ScriptableContext, TooltipItem } from 'chart.js';
 
 const props = defineProps<{
   prices: Array<{ timestamp: string | Date; price: number | string }>,
@@ -135,8 +136,6 @@ const chartData = computed(() => {
     return null;
   }
 
-  console.log('Raw prices data:', props.prices);
-
   // Сортируем данные по времени и удаляем дубликаты
   const uniquePrices = props.prices
     .map(p => ({
@@ -151,8 +150,6 @@ const chartData = computed(() => {
       )
     );
 
-  console.log('Processed prices data:', uniquePrices);
-
   if (uniquePrices.length === 0) {
     return null;
   }
@@ -164,8 +161,8 @@ const trendInfo = computed(() => {
   const data = chartData.value;
   if (!data || data.uniquePrices.length < 2) return null;
 
-  const firstPrice = data.uniquePrices[0].price;
-  const lastPrice = data.uniquePrices[data.uniquePrices.length - 1].price;
+  const firstPrice = data.uniquePrices[0]!.price;
+  const lastPrice = data.uniquePrices[data.uniquePrices.length - 1]!.price;
   const priceChange = lastPrice - firstPrice;
   const changePercent = firstPrice > 0 ? ((priceChange / firstPrice) * 100) : 0;
 
@@ -176,7 +173,7 @@ const trendInfo = computed(() => {
   };
 });
 
-const chartDisplayData = computed(() => {
+const chartDisplayData = computed<ChartData<'line'> | null>(() => {
   const data = chartData.value;
   if (!data) return null;
 
@@ -227,17 +224,13 @@ const chartDisplayData = computed(() => {
         pointHoverBorderColor: '#FFFFFF',
         pointHoverBorderWidth: 4,
         borderCapStyle: 'round' as const,
-        borderJoinStyle: 'round' as const,
-        shadowColor: lineColor,
-        shadowBlur: 10,
-        shadowOffsetX: 0,
-        shadowOffsetY: 2
+        borderJoinStyle: 'round' as const
       }
     ]
   };
 });
 
-const chartOptions = computed(() => {
+const chartOptions = computed<ChartOptions<'line'>>(() => {
   const data = chartData.value;
   if (!data) return {};
 
@@ -245,15 +238,14 @@ const chartOptions = computed(() => {
   const firstPrice = data.uniquePrices[0]?.price || 0;
   const lastPrice = data.uniquePrices[data.uniquePrices.length - 1]?.price || 0;
   const isPositiveTrend = lastPrice >= firstPrice;
-  const priceChange = lastPrice - firstPrice;
-  const priceChangePercent = firstPrice > 0 ? ((priceChange / firstPrice) * 100) : 0;
 
   return {
     responsive: true,
-    maintainAspectRatio: false,    animation: {
+    maintainAspectRatio: false,
+    animation: {
       duration: 800,
       easing: 'easeOutQuart' as const,
-      delay: (context: any) => context.dataIndex * 20 // Более быстрая анимация точек
+      delay: (context: ScriptableContext<'line'>) => context.dataIndex * 20
     },
     interaction: {
       intersect: false,
@@ -268,7 +260,8 @@ const chartOptions = computed(() => {
         borderWidth: 2,
         cornerRadius: 16,
         displayColors: false,
-        padding: 16,        titleFont: {
+        padding: 16,
+        titleFont: {
           size: 14,
           weight: 'bold' as const
         },
@@ -277,8 +270,11 @@ const chartOptions = computed(() => {
           weight: 'normal' as const
         },
         callbacks: {
-          title: (context: any) => {
-            const date = data.uniquePrices[context[0].dataIndex]?.timestamp;
+          title: (context: TooltipItem<'line'>[]) => {
+            const dataIndex = context[0]?.dataIndex;
+            const date = dataIndex === undefined
+              ? undefined
+              : data.uniquePrices[dataIndex]?.timestamp;
             if (date) {
               return new Date(date).toLocaleString('ru-RU', {
                 year: 'numeric',
@@ -290,13 +286,13 @@ const chartOptions = computed(() => {
             }
             return '';
           },
-          label: (context: any) => {
+          label: (context: TooltipItem<'line'>) => {
             return `₿ $${Number(context.raw).toLocaleString('en-US', {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2
             })}`;
           },
-          afterLabel: (context: any) => {
+          afterLabel: (context: TooltipItem<'line'>) => {
             // Показываем изменение цены относительно первой точки
             const currentPrice = Number(context.raw);
             const change = currentPrice - firstPrice;
@@ -312,16 +308,6 @@ const chartOptions = computed(() => {
               })}`,
               `${changeText}${changePercent.toFixed(2)}%`
             ];
-          }
-        },
-        external: (context: any) => {
-          // Дополнительные стили для tooltip
-          const tooltipEl = context.tooltip;
-          if (tooltipEl.opacity === 0) return;
-          
-          // Добавляем тень
-          if (context.chart.canvas) {
-            context.chart.canvas.style.filter = 'drop-shadow(0 10px 25px rgba(0, 0, 0, 0.3))';
           }
         }
       },
@@ -339,7 +325,8 @@ const chartOptions = computed(() => {
         },
         border: {
           display: false
-        },        ticks: {
+        },
+        ticks: {
           maxRotation: 45,
           autoSkip: true,
           maxTicksLimit: props.period === 'day' ? 12 : props.period === 'week' ? 7 : props.period === 'month' ? 10 : 8,
@@ -361,7 +348,8 @@ const chartOptions = computed(() => {
         },
         border: {
           display: false
-        },        ticks: {
+        },
+        ticks: {
           font: {
             size: 12,
             weight: 500,
@@ -386,7 +374,8 @@ const chartOptions = computed(() => {
         hoverRadius: 10,
         hitRadius: 15,
         borderWidth: 4
-      }    }
-  } as any;
+      }
+    }
+  };
 });
 </script>

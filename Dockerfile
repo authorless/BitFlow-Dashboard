@@ -4,9 +4,7 @@ WORKDIR /app
 
 RUN apk add --no-cache \
     openssl \
-    libc6-compat \
-    curl \
-    netcat-openbsd
+    libc6-compat
 
 ENV NUXT_TELEMETRY_DISABLED=1
 
@@ -17,8 +15,6 @@ COPY prisma ./prisma/
 
 RUN npm ci
 
-RUN npx prisma generate
-
 FROM base AS builder
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -28,14 +24,15 @@ COPY . .
 
 RUN npm run build
 
+RUN npm prune --omit=dev
+
 FROM node:24-alpine@sha256:2bdb65ed1dab192432bc31c95f94155ca5ad7fc1392fb7eb7526ab682fa5bf14 AS runner
 
 WORKDIR /app
 
 RUN apk add --no-cache \
     openssl \
-    libc6-compat \
-    netcat-openbsd
+    libc6-compat
 
 RUN addgroup -S nodejs
 RUN adduser -S bitflow -G nodejs
@@ -58,7 +55,7 @@ USER bitflow
 
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s \
-CMD wget --quiet --tries=1 --spider http://localhost:3000 || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s \
+CMD wget --quiet --tries=1 --spider http://localhost:3000/api/health || exit 1
 
 ENTRYPOINT ["./entrypoint.sh"]

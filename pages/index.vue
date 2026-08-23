@@ -9,6 +9,7 @@
           <button
             v-for="period in periods"
             :key="period.value"
+            type="button"
             @click="selectPeriod(period)"
             :class="[
               'px-6 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105',
@@ -17,6 +18,7 @@
                 : 'bg-gray-700 hover:bg-gray-600 text-gray-300 hover:text-white'
             ]"
             :disabled="loading"
+            :aria-pressed="selectedPeriod.value === period.value"
           >
             {{ period.label }}
           </button>
@@ -26,19 +28,22 @@
           <input
             type="date"
             v-model="customStartDate"
+            aria-label="Start date"
             class="border border-gray-600 bg-gray-700 text-white rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
             :disabled="loading"
           />
           <input
             type="date"
             v-model="customEndDate"
+            aria-label="End date"
             class="border border-gray-600 bg-gray-700 text-white rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
             :disabled="loading"
           />
           <button
+            type="button"
             @click="applyCustomPeriod"
             class="bg-gradient-to-r from-orange-500 to-yellow-500 text-white px-4 py-2 rounded-lg hover:from-orange-600 hover:to-yellow-600 transition-all duration-200"
-            :disabled="loading"
+            :disabled="loading || !customStartDate || !customEndDate"
           >
             Apply
           </button>
@@ -47,14 +52,14 @@
 
       <div class="bg-gray-800 rounded-xl shadow-2xl p-6 border border-gray-700">
         <div class="text-center mb-6">
-          <div v-if="error" class="text-red-400 mb-4 text-lg">{{ error }}</div>
+          <div v-if="error" role="alert" class="text-red-400 mb-4 text-lg">{{ error }}</div>
           <div class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-yellow-400">
             ${{ currentPrice.toLocaleString() }}
           </div>
           <div class="text-gray-400 text-sm mt-2">Current Bitcoin Price</div>
         </div>
         
-        <div v-if="loading" class="h-[500px] flex items-center justify-center">
+        <div v-if="loading" role="status" aria-live="polite" class="h-[500px] flex items-center justify-center">
           <div class="text-center">
             <div class="text-6xl mb-4 animate-pulse">₿</div>
             <div class="text-xl text-gray-400">Loading...</div>
@@ -70,14 +75,29 @@
 </template>
 
 <script setup lang="ts">
+type PeriodValue = 'day' | 'week' | 'month' | 'year' | 'custom';
+
+interface PricePoint {
+  timestamp: string;
+  price: number | string;
+}
+
+interface Period {
+  label: string;
+  value: PeriodValue;
+}
+
 const currentPrice = ref(0);
-const prices = ref<Array<{ timestamp: string; price: number }>>([]);
+const prices = ref<PricePoint[]>([]);
 const customStartDate = ref('');
 const customEndDate = ref('');
 const loading = ref(false);
-const error = ref<string>('');
+const priceError = ref('');
+const historicalError = ref('');
+const error = computed(() => historicalError.value || priceError.value);
+let priceRefreshTimer: ReturnType<typeof setInterval> | undefined;
 
-const periods = [
+const periods: Period[] = [
   { label: 'Day', value: 'day' },
   { label: 'Week', value: 'week' },
   { label: 'Month', value: 'month' },
@@ -85,24 +105,23 @@ const periods = [
   { label: 'Custom', value: 'custom' },
 ];
 
-const selectedPeriod = ref(periods[0]);
+const selectedPeriod = ref<Period>(periods[0]!);
 const showCustomPeriod = computed(() => selectedPeriod.value.value === 'custom');
 
 const fetchCurrentPrice = async () => {
   try {
-    console.log('Fetching current price...');
     const response = await fetch('/api/price');
     if (!response.ok) throw new Error('Failed to fetch current price');
-    const data = await response.json();
-    console.log('Received price data:', data);
+    const data = await response.json() as { price: number };
     currentPrice.value = data.price;
+    priceError.value = '';
   } catch (err) {
     console.error('Error fetching current price:', err);
-    error.value = 'Failed to fetch current price';
+    priceError.value = 'Failed to fetch current price';
   }
 };
 
-const getDateRange = (period: string) => {
+const getDateRange = (period: PeriodValue) => {
   const end = new Date();
   end.setHours(23, 59, 59, 999);
   
@@ -131,16 +150,13 @@ const getDateRange = (period: string) => {
   return { start, end };
 };
 
-const fetchHistoricalData = async (start: Date, end: Date, period: string = 'day') => {
+const fetchHistoricalData = async (start: Date, end: Date, period: PeriodValue = 'day') => {
   try {
     loading.value = true;
-    error.value = '';
+    historicalError.value = '';
     
-    // Проверяем, что даты корректны
     const startTime = start.getTime();
     const endTime = end.getTime();
-    
-    console.log('Fetching historical data with params:', { startTime, endTime, period });
     
     const params = new URLSearchParams({
       startDate: startTime.toString(),
@@ -148,36 +164,25 @@ const fetchHistoricalData = async (start: Date, end: Date, period: string = 'day
       period
     });
 
-    const url = `/api/historical?${params}`;
-    console.log('Historical data URL:', url);
-    
-    const response = await fetch(url);
+    const response = await fetch(`/api/historical?${params}`);
     if (!response.ok) throw new Error(`Failed to fetch historical data: ${response.status}`);
     
-    const data = await response.json();
-    console.log('Received historical data:', data.length, 'items');
+    const data = await response.json() as PricePoint[];
     prices.value = data;
   } catch (err) {
     console.error('Error fetching historical data:', err);
-    error.value = 'Failed to fetch historical data';
-    prices.value = [];
+    historicalError.value = 'Failed to fetch historical data';
   } finally {
     loading.value = false;
   }
 };
 
 const updateData = async () => {
-  try {
-    const { start, end } = getDateRange(selectedPeriod.value.value);
-    // Убираем fetchCurrentPrice() отсюда - текущая цена обновляется отдельно
-    await fetchHistoricalData(start, end, selectedPeriod.value.value);
-  } catch (err) {
-    console.error('Error updating data:', err);
-    error.value = 'Failed to update data';
-  }
+  const { start, end } = getDateRange(selectedPeriod.value.value);
+  await fetchHistoricalData(start, end, selectedPeriod.value.value);
 };
 
-const selectPeriod = async (period: typeof periods[0]) => {
+const selectPeriod = async (period: Period) => {
   selectedPeriod.value = period;
   if (period.value !== 'custom') {
     await updateData();
@@ -186,7 +191,7 @@ const selectPeriod = async (period: typeof periods[0]) => {
 
 const applyCustomPeriod = async () => {
   if (!customStartDate.value || !customEndDate.value) {
-    error.value = 'Please select both start and end dates';
+    historicalError.value = 'Please select both start and end dates';
     return;
   }
 
@@ -197,29 +202,23 @@ const applyCustomPeriod = async () => {
   end.setHours(23, 59, 59, 999);
 
   if (start > end) {
-    error.value = 'Start date must be before end date';
+    historicalError.value = 'Start date must be before end date';
     return;
   }
 
-  // Обновляем только исторические данные, не трогаем текущую цену
   await fetchHistoricalData(start, end, 'custom');
 };
 
-// Начальная загрузка данных
 onMounted(async () => {
-  console.log('Component mounted, initializing data...');
-  
-  // Устанавливаем текущую цену сразу при загрузке
   await fetchCurrentPrice();
-  
-  // Затем получаем исторические данные за день
+
   const { start, end } = getDateRange('day');
   await fetchHistoricalData(start, end, 'day');
-  
-  console.log('Initial data loaded');
-  
-  // Запускаем обновление цены каждые 30 секунд
-  const interval = setInterval(fetchCurrentPrice, 30000);
-  onUnmounted(() => clearInterval(interval));
+
+  priceRefreshTimer = setInterval(fetchCurrentPrice, 30_000);
+});
+
+onUnmounted(() => {
+  if (priceRefreshTimer) clearInterval(priceRefreshTimer);
 });
 </script>

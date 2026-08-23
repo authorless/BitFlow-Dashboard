@@ -4,13 +4,18 @@
   "description": "Modern Bitcoin dashboard with interactive charts and real-time data",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=24.0.0",
+    "npm": ">=11.0.0"
+  },
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
     "start": "node .output/server/index.mjs",
+    "typecheck": "nuxt typecheck",
     "postinstall": "nuxt prepare && prisma generate",
     "prisma:generate": "prisma generate",
-    "prisma:push": "prisma db push",
+    "prisma:deploy": "prisma migrate deploy",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
     "docker:build": "docker compose build --no-cache",
@@ -19,20 +24,20 @@
   },
   "dependencies": {
     "@nuxtjs/tailwindcss": "^7.0.0-beta.0",
-    "@prisma/client": "^7.0.0",
-    "@vueuse/core": "^14.0.0",
-    "axios": "^1.10.0",
+    "@prisma/client": "^6.19.3",
     "chart.js": "^4.5.0",
-    "dayjs": "^1.11.13",
     "nuxt": "^4.0.0",
-    "pg": "^8.16.2",
-    "prisma": "^7.0.0",
+    "prisma": "^6.19.3",
     "vue": "^3.3.8",
     "vue-chartjs": "^5.3.2",
     "vue-router": "^5.0.0"
   },
   "devDependencies": {
-    "@types/pg": "8.20.0",
-    "cross-env": "10.1.0"
+    "@types/node": "^24.0.0",
+    "typescript": "^6.0.3",
+    "vue-tsc": "^3.3.11"
+  },
+  "overrides": {
+    "deepmerge-ts": "8.0.2"
   }
 }
