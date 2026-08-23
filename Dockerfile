@@ -22,7 +22,7 @@ COPY --from=deps /app/prisma ./prisma
 
 COPY . .
 
-RUN npm run build
+RUN npm run postinstall && npm run build
 
 RUN npm prune --omit=dev
 

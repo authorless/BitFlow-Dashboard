@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+    image: postgres:18-alpine@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
 
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-bitflow}
@@ -8,7 +8,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-bitcoin_db}
 
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_v18:/var/lib/postgresql
 
     restart: unless-stopped
 
@@ -31,7 +31,7 @@ services:
         condition: service_healthy
 
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-bitflow}:${POSTGRES_PASSWORD:-bitflow-local-only}@db:5432/${POSTGRES_DB:-bitcoin_db}?connect_timeout=10&pool_timeout=10
+      DATABASE_URL: postgresql://${POSTGRES_USER:-bitflow}:${POSTGRES_PASSWORD:-bitflow-local-only}@db:5432/${POSTGRES_DB:-bitcoin_db}
       NODE_ENV: production
       BINANCE_API_BASE_URL: ${BINANCE_API_BASE_URL:-https://api.binance.com/api/v3}
       TRUST_PROXY: ${TRUST_PROXY:-false}
@@ -62,7 +62,7 @@ services:
       start_period: 30s
 
 volumes:
-  postgres_data:
+  postgres_data_v18:
 
 networks:
   database:
