@@ -33,9 +33,9 @@
     "vue-router": "^5.0.0"
   },
   "devDependencies": {
-    "@types/node": "^24.0.0",
-    "typescript": "^6.0.3",
-    "vue-tsc": "^3.3.11"
+    "@types/node": "24.13.3",
+    "typescript": "6.0.3",
+    "vue-tsc": "3.3.11"
   },
   "overrides": {
     "deepmerge-ts": "8.0.2"
