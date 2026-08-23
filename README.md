@@ -160,7 +160,7 @@ npm run prisma:generate  # ⚡ Generate Prisma client
 
 - **Node.js** 24+
 - **npm** 11+
-- **PostgreSQL** 16 recommended
+- **PostgreSQL** 18 recommended
 - **Docker** (recommended)
 
 
@@ -187,6 +187,16 @@ TRUST_PROXY=false
 - Database refreshes are atomic, and cached prices remain available if the provider fails.
 - Production responses include security headers; the Docker app runs as an unprivileged, read-only container.
 - Major dependency upgrades require manual review, while CI installs, type-checks, and builds every pull request.
+
+### Upgrading an existing Docker database
+
+PostgreSQL data directories cannot be reused across major versions. Before starting this version over an existing PostgreSQL 16 Docker volume, run:
+
+```bash
+./scripts/migrate-postgres-18.sh
+```
+
+The migration stops the Compose stack, copies the application database into a new PostgreSQL 18 volume, verifies the restored database, and keeps the original PostgreSQL 16 volume as a rollback copy.
 
 ## 🎨 What's New in Design
 
